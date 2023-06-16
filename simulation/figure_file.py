@@ -11,14 +11,9 @@ class SVMMAfigure():
         self.ismisspecification=ismisspecification
         self.linewidth = 0.7
         self.markersize = '4'
-        # self.myaddress = os.path.abspath(os.getcwd() + '/../')
         self.summary_dir = os.path.abspath('..\\figures\\ismisspecification={1}\\modeltype={0}\\summary\\'.format(modeltype, ismisspecification))
         self.folder_figure = os.path.abspath('..\\figures\\ismisspecification={1}\\modeltype={0}\\'.format(modeltype, ismisspecification))
 
-        # self.ratio_varlist = ['ratio_' + nam for nam in ['full', 'MA', 'unif', 'Aic', 'Aic2','Bic', 'Saic', 'Saic2','Sbic']]
-        # self.MSE_varlist=['MSE_' + nam for nam in ['full', 'MA', 'unif', 'Aic', 'Aic2', 'Bic', 'Saic', 'Saic2', 'Sbic']]
-        # self.x_labels=['FULL', 'MA', 'UNIF', 'AIC', 'AIC2', 'BIC', 'SAIC', 'SAIC2', 'SBIC']
-        # self.stype_list = ['--+', '-*', '-.o', ':v', '--^', '-.D', '--1','-s',':3']
         methlist=['cl','ch','scl','sch','ma','unif']
         methlist2 = ['cl', 'ch', 'scl', 'sch', 'ma', 'unif', 'Bagging', 'AdaBoosting']
         self.ratio_varlist = ['ratio_' + nam for nam in methlist]
@@ -26,16 +21,12 @@ class SVMMAfigure():
         self.NMSE_varlist = ['NMSE_' + nam for nam in methlist]
         self.TPR_varlist = ['TPR_' + nam for nam in methlist]
         self.FPR_varlist = ['FPR_' + nam for nam in methlist]
-        # self.x_labels = ['CL', 'CH', 'CH2','CH3','CH4','MA2', 'MA']
         self.x_labels = [r'$SVMICL$', r'$SVMICH$',r'SCL',r'SCH', r'$MA$',r'$UNIF$']
         self.stype_list = ['--+', '-*', '-.o', ':v', '--^', '-.D', '--1', '-s']
-        # modeltype1, self.modeltype2 = modeltype.split('_')
-        # self.modeltype1 = 'finite-dim.' if modeltype1 == 'fix' else 'divergent-dim.'
+
 
     def tidy_fun(self):
-        # samplesizeset = self.samplesizeset
         modeltype = self.modeltype
-
         # collect the data
         df = pd.DataFrame()
         for n,p in self.modelsettings:
@@ -43,7 +34,7 @@ class SVMMAfigure():
             for file in os.listdir(folder):
                 tempfile = pd.read_csv(folder + '\\' + file)
                 df = pd.concat([df, tempfile])
-        # #####################################
+
         folder2 = self.summary_dir
         if not os.path.exists(folder2):
             os.makedirs(folder2)
@@ -63,15 +54,12 @@ class SVMMAfigure():
         self.meandata = df4.copy()
 
     def figure_fun(self):
-        # modelsettings = self.modelsettings
         folder_figure = self.folder_figure
         if not os.path.exists(folder_figure):
             os.makedirs(folder_figure)
         df = self.meandata.copy()
         #the line chart of MSE, based on meandata.csv
         stype_list = self.stype_list
-
-
         # optimal property, based on meandata.csv
         R2set = np.unique(df['p'])
         self.R2set = R2set
@@ -142,7 +130,6 @@ class SVMMAfigure():
 
         # optimal property, based on meandata.csv
         R2set = np.unique(df['p'])
-        #应当把n也加上
         self.R2set = R2set
         ratio_list = self.ratio_varlist
         for p in R2set:

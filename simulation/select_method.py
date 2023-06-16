@@ -2,14 +2,12 @@ import numpy as np
 
 
 def Select_Evaluation(bestmodel_ind, X_pre, Y_pre, Models, Indexs):
-    # 该函数用于对选中模型的指标评估计算
     p = Indexs.shape[1]
     results = dict()
     results['bestmodel'] = bestmodel_ind
     clfbest = Models[results['bestmodel']]
     Y_res = clfbest.predict(X_pre[:, Indexs[results['bestmodel']]])
     results['testerror'] = np.array((Y_res != Y_pre)).mean()
-    # 得到估计模型的变量序号
     return results
 
 class SVMICL():
@@ -33,7 +31,7 @@ class SVMICL():
             self.get_scores()
 
         inds=np.argsort(self.SVMICL_scores)
-        self.bestmodel_ind = inds[0:m]#self.SVMICH_scores.index(min(self.SVMICH_scores))
+        self.bestmodel_ind = inds[0:m]
         return self.bestmodel_ind
 
     def do_evaluation(self,X_pre,Y_pre):
@@ -68,7 +66,7 @@ class SVMICH():
             self.get_scores()
 
         inds=np.argsort(self.SVMICH_scores)
-        self.bestmodel_ind = inds[0:m]#self.SVMICH_scores.index(min(self.SVMICH_scores))
+        self.bestmodel_ind = inds[0:m]
         return self.bestmodel_ind
 
     def do_evaluation(self,X_pre,Y_pre):

@@ -1,34 +1,10 @@
-import numpy as np
-from numpy.linalg import cholesky
-from sklearn import svm
-from sklearn.cluster import KMeans
-import itertools
-from scipy.special import comb, perm
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
-import scipy.stats as stat
-# from multiprocessing import Pool
 from multiprocessing import Process, Queue
-import select_method
 import ma_method
-import matplotlib.pyplot as plt
 import figure_file
-from mykmeans import myKMeans
 from tools_function import *
-# print(os.getcwd())
-# os.chdir('.\\codes')
-from sklearn.ensemble import BaggingClassifier,AdaBoostClassifier
-
 import Enselearning
-
-# #计算排列数
-# A=perm(3,2)
-# #计算组合数
-# C=comb(45,2)
-# print(A,C)
-
-#模型应该加入截距项，即X有一列是全1的
 
 
 def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspecification):
@@ -39,17 +15,12 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
     C = (samplesize * lambda_n) ** (-1)
 
     # candidate models setting up
-    # Indexs = Indexs_fun(p, Mn)
-    # k<Mn
-    # k<Mn，k表示每个模型最多提供的候选模型个数
-    Indexs = Indexs_fun_lasso(X_train, Y_train,k=100)#max(1, int(2*samplesize ** (1 / 3))))
+    Indexs = Indexs_fun_lasso(X_train, Y_train,k=100)
     # estimate for candidate model
     Models = []
     Betas = []
     HingesLoss = []
     for index in Indexs:
-        # clf = svm.SVC(kernel='linear', C=C)
-        # clf=svm.SVC(kernel='linear', C=C, random_state=0)
         clf=svm.LinearSVC(penalty='l2',loss='hinge', C=C)
         X_train_s = X_train[:, index]
         clf.fit(X_train_s, Y_train)
@@ -72,25 +43,11 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
     w_full[-1] = 1
     w_unif=np.ones(Indexs.shape[0])/Indexs.shape[0]
 
-
-
-    #model averaging
-    # k = max(2, int(  len(X_train) ** (1 / 3)))
-    # MAset=set()
-    # MAset=MAset.union(CL_method.get_bestmodel(k))
-    # MAset=MAset.union( CH_method.get_bestmodel(k))
-    # MAset=MAset.union(CH_method2.get_bestmodel(k))
-    # MAset=MAset.union( CH_method3.get_bestmodel(k))
-    # MAset=MAset.union(CH_method4.get_bestmodel(k))
-    # MA_inds=list(MAset)
-
-
     MA_inds=range(len(Indexs))
     MA_Indexs=Indexs[MA_inds,:]
     MABetas=[Betas[i] for i in MA_inds]
     MA_method = ma_method.SVMMA(X_train, Y_train, MA_Indexs, samplesize, MABetas, Jn=5, C=C)
     MA_method2 = ma_method.SVMMA2(X_train, Y_train, MA_Indexs, samplesize, MABetas, Jn=5, C=C)
-    # SVMMA是求和等一，SVMMA2是求和不等一
     zeros = np.zeros(Indexs.shape[0])
     w_ma_hat = MA_method.calculate_weights()
     zeros[MA_inds]=w_ma_hat
@@ -106,12 +63,8 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
 
     print('the weights has been gotten.')
 
-    # 整理权重
     weight_df = pd.DataFrame({'w_CL': w_CL,
                               'w_CH': w_CH,
-                              # 'w_CH2': w_CH2,
-                              # 'w_CH3': w_CH3,
-                              # 'w_CH4': w_CH4,
                               'w_ma': w_ma_hat,
                               'w_ma2': w_ma_hat2,
                               'w_SCL':w_SCL,
@@ -122,20 +75,12 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
     TPR_full, FPR_full, MSE_full, hingeloss_full = ma_method.MA_Evaluation(w_full, X_pre, Y_pre, Models, Indexs)
     TPR_cl, FPR_cl, MSE_cl, hingeloss_cl = ma_method.MA_Evaluation(w_CL, X_pre, Y_pre, Models, Indexs)
     TPR_ch, FPR_ch, MSE_ch, hingeloss_ch = ma_method.MA_Evaluation(w_CH, X_pre, Y_pre, Models, Indexs)
-    # TPR_ch2, FPR_ch2, MSE_ch2, hingeloss_ch2 = ma_method.MA_Evaluation(w_CH2, X_pre, Y_pre, Models, Indexs)
-    # TPR_ch3, FPR_ch3, MSE_ch3, hingeloss_ch3 = ma_method.MA_Evaluation(w_CH3, X_pre, Y_pre, Models, Indexs)
-    # TPR_ch4, FPR_ch4, MSE_ch4, hingeloss_ch4 = ma_method.MA_Evaluation(w_CH4, X_pre, Y_pre, Models, Indexs)
     TPR_ma, FPR_ma, MSE_ma, hingeloss_ma = ma_method.MA_Evaluation(w_ma_hat, X_pre, Y_pre, Models, Indexs)
     TPR_ma2, FPR_ma2, MSE_ma2, hingeloss_ma2 = ma_method.MA_Evaluation(w_ma_hat2, X_pre, Y_pre, Models, Indexs)
     TPR_unif, FPR_unif, MSE_unif, hingeloss_unif = ma_method.MA_Evaluation(w_unif, X_pre, Y_pre, Models, Indexs)
     TPR_SCL, FPR_SCL, MSE_SCL, hingeloss_SCL = ma_method.MA_Evaluation(w_SCL, X_pre, Y_pre, Models, Indexs)
     TPR_SCH, FPR_SCH, MSE_SCH, hingeloss_SCH = ma_method.MA_Evaluation(w_SCH, X_pre, Y_pre, Models, Indexs)
 
-    # implement bagging
-    # base_est = svm.LinearSVC(penalty='l2', loss='hinge', C=1, random_state=0, max_iter=1000)
-    # clf_bagging = BaggingClassifier(base_estimator=base_est, n_estimators=50, max_features=1.0, random_state=0).fit(
-    #     X_train, Y_train)
-    # bagging_predict = clf_bagging.predict(X_pre)
     myBagging=Enselearning.Bagging(X_train,Y_train,Models,Indexs)
     myBagging.get_weights(type='unif')
     bagging_predict=myBagging.predict(X_pre)
@@ -148,9 +93,6 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
     FPR_Bagging = FP / N
 
     # implement adaboosting
-    # clf_boosting = AdaBoostClassifier(base_estimator=base_est, n_estimators=50, algorithm='SAMME', random_state=0).fit(
-    #     X_train, Y_train)
-    # boosting_predict = clf_boosting.predict(X_pre)
     myAdaboosting=Enselearning.Adaboosting(X_train,Y_train,Indexs[::-1,:],C=C)
     myAdaboosting.fit()
     boosting_predict=myAdaboosting.predict(X_pre)
@@ -169,9 +111,6 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
     minloss = MA_method.get_minloss(X_pre, Y_pre)
     ratio_cl = hingeloss_cl / minloss
     ratio_ch = hingeloss_ch / minloss
-    # ratio_ch2 = hingeloss_ch2 / minloss
-    # ratio_ch3 = hingeloss_ch3 / minloss
-    # ratio_ch4 = hingeloss_ch4 / minloss
     ratio_ma2 = hingeloss_ma2 / minloss
     ratio_ma = hingeloss_ma / minloss
     ratio_full = hingeloss_full / minloss
@@ -185,18 +124,12 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
                        'ratio_ch': ratio_ch,
                        'ratio_scl': ratio_SCL,
                        'ratio_sch': ratio_SCH,
-                       # 'ratio_ch2': ratio_ch2,
-                       # 'ratio_ch3': ratio_ch3,
-                       # 'ratio_ch4': ratio_ch4,
-                       'ratio_ma2': ratio_ma2,
+                        'ratio_ma2': ratio_ma2,
                        'ratio_ma': ratio_ma,
                        'ratio_full': ratio_full,
                        'ratio_unif': ratio_unif,
                        'TPR_cl': TPR_cl,
                        'TPR_ch': TPR_ch,
-                       # 'TPR_ch2': TPR_ch2,
-                       # 'TPR_ch3': TPR_ch3,
-                       # 'TPR_ch4': TPR_ch4,
                        'TPR_ma2': TPR_ma2,
                        'TPR_ma': TPR_ma,
                        'TPR_full': TPR_full,
@@ -208,9 +141,6 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
                        'minloss': minloss,
                        'FPR_cl': FPR_cl,
                        'FPR_ch': FPR_ch,
-                       # 'FPR_ch2': FPR_ch2,
-                       # 'FPR_ch3': FPR_ch3,
-                       # 'FPR_ch4': FPR_ch4,
                        'FPR_ma2': FPR_ma2,
                        'FPR_ma': FPR_ma,
                        'FPR_full': FPR_full,
@@ -223,9 +153,6 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
                        'MSE_ch': MSE_ch,
                        'MSE_scl': MSE_SCL,
                        'MSE_sch': MSE_SCH,
-                       # 'MSE_ch2': MSE_ch2,
-                       # 'MSE_ch3': MSE_ch3,
-                       # 'MSE_ch4': MSE_ch4,
                        'MSE_ma2': MSE_ma2,
                        'MSE_ma': MSE_ma,
                        'MSE_full': MSE_full,
@@ -234,21 +161,11 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
                        'MSE_AdaBoosting': MSE_AdaBoosting,
                        'CL_select': CL_bestmodel_ind,
                        'CH_select': CH_bestmodel_ind
-                       # 'minloss':minloss
-                       # 'hingeloss_cl':hingeloss_cl,
-                       # 'hingeloss_ch':hingeloss_ch,
-                       # 'hingeloss_sbic':hingeloss_sbic,
-                       # 'hingeloss_ma':hingeloss_ma
-                       }, index=[0])
+                        }, index=[0])
 
     # tidy results
-    # dfH = pd.DataFrame(SVMICH_results, index=['SVMICH'])
-    # dfL = pd.DataFrame(SVMICL_results, index=['SVMICL'])
-    # dfSBIC = pd.DataFrame(SBIC_results, index=['SBIC'])
-
     if not os.path.exists(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\replication\\'):
         os.makedirs(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\replication\\')
-    # dfH = pd.concat([dfH, dfL, dfSBIC], axis=0)
     df.to_csv(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\replication\\repeat={repeat}.csv', index=False)
     if not os.path.exists(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\Indexs\\'):
         os.makedirs(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\Indexs\\')
@@ -257,7 +174,6 @@ def main(repeat, X_train, Y_train, X_pre, Y_pre, Mn, S_true, modeltype,ismisspec
     if not os.path.exists(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\weights\\'):
         os.makedirs(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\weights\\')
     weight_df.to_csv(f'..\\Results\\ismisspecification={ismisspecification}\\modeltype={modeltype}\\n={samplesize}_p={p}\\weights\\repeat={repeat}.csv', index=False)
-
 
     return df
 
@@ -275,25 +191,18 @@ def generate_data_fun(repeat, p, samplesize,ismisspecification=False):
         p=p+1
 
 
-    # replication = 200
-    # samplesize = 200
     testsize = 10000
     Mn = int(samplesize ** (1/3))
     n = samplesize + testsize
     np.random.seed(1000 * repeat)
 
-    # 均值和方差
     mu = np.zeros(p)
     mu[0:q] = 1
     Sigma2 = np.eye(p) *1.2-np.ones((p, p)) * (0.2)
-
-    # 产生Y
     Y = np.random.binomial(n=1, p=0.5, size=n)
     Y[Y == 0] = -1
 
-
     X=np.random.multivariate_normal(mean=np.zeros(len(Sigma2)),cov=Sigma2,size=n)
-
     X[Y == 1] = X[Y == 1] + mu
     X[Y == -1] = X[Y == -1] - mu
 
@@ -303,28 +212,22 @@ def generate_data_fun(repeat, p, samplesize,ismisspecification=False):
     Y_train = Y[0:samplesize]
     X_pre = X[samplesize:, :]
     Y_pre = Y[samplesize:]
-    S_true = {0, 1, 2, 3}  # 真实模型的索引,在后面计算其实没啥用
+    S_true = {0, 1, 2, 3}
 
-
-    ###############################################
-    #目的是要让其缺失一个重要变量，令真实模型不在里面
     if ismisspecification:
         inds=list(range(0,q-1))
         inds.extend(list(range(q,X.shape[1])))
     else:
         inds=list(range(0,X.shape[1]))
-    ###############################################
 
     return X_train[:,inds], Y_train, X_pre[:,inds], Y_pre, S_true, Mn,Bayes_error
 
 def generate_data_fun2(repeat, p, samplesize,ismisspecification=True):
-    # 产生数据
-    # p = 10
+    # generate the data
     q = 4
     if ismisspecification:
         q=q+1
         p=p+1
-
 
     testsize = 10000
     Mn = int(samplesize ** (1/3))
@@ -339,11 +242,7 @@ def generate_data_fun2(repeat, p, samplesize,ismisspecification=True):
     for i in range(p):
         for j in range(p):
             Sigma2[i,j]=0.4**np.abs(i-j)
-    # R = cholesky(Sigma2)
-    # X = np.dot(np.random.randn(n, p+1), R)
-
     X=np.random.multivariate_normal(mean=np.zeros(len(Sigma2)),cov=Sigma2,size=n)
-
 
     #generate Y
     Y=np.random.binomial(n=1, p=stat.norm.cdf(np.dot(X, beta)), size=n)
@@ -356,14 +255,13 @@ def generate_data_fun2(repeat, p, samplesize,ismisspecification=True):
     Y_train = Y[0:samplesize]
     X_pre = X[samplesize:, :]
     Y_pre = Y[samplesize:]
-    S_true = {0, 1, 2, 3}  # 真实模型的索引
-    ###############################################
+    S_true = {0, 1, 2, 3}
     if ismisspecification:
         inds=list(range(0,q-1))
         inds.extend(list(range(q,X.shape[1])))
     else:
         inds=list(range(0,X.shape[1]))
-    #3##############################################
+
     return X_train[:,inds], Y_train, X_pre[:,inds], Y_pre, S_true, Mn,Bayes_error
 
 
@@ -405,21 +303,12 @@ class worker(Process):
         while self.mission_queue.empty() == False:
            work_fun(self.mission_queue.get())
 
-if __name__=='__main__1':
-    work_fun((20,100, 2,True, 6))
 
-if __name__=='__main_1_':
-    modelsettings=[(200,1000),(500,1000),(800,1000),(1000,1000),(1500,1000)]#[(200,1000),(400,1000),(800,1000),(1500,1000)]
-    Figures=figure_file.SVMMAfigure(modelsettings, modeltype=1,ismisspecification=True)
-    Figures.tidy_fun()
-    Figures.figure_fun2()
-#
-#
 if __name__ == '__main__':
     mission_queue = Queue()
-    modeltypeset=[2]
+    modeltypeset=[1,2]
 
-    modelsettings =[(100,1000),(200,1000),(300,1000)]#,(400,1000)]#]#(200,400),,(400,1000)]#,(300,1000),(400,1000)]#,(300,1000),(400,1000)][(100,1000)]
+    modelsettings =[(100,1000),(200,1000),(300,1000),(400,1000)]
     ismisset=[True,False]
     for n_p in modelsettings:
         for modeltype in modeltypeset:
@@ -427,7 +316,7 @@ if __name__ == '__main__':
                 for ismisspecification in ismisset:
                     mission_queue.put((n_p[0],n_p[1],modeltype,ismisspecification,repeat))
 
-    # # 创建n个进程类，并开启
+    # multiprocess computing
     Workers=[]
     for i in range(10):
         workrobot = worker(mission_queue)
@@ -445,6 +334,3 @@ if __name__ == '__main__':
             Figures.figure_fun()
 
     print('The program is finished!')
-    # # Tidy(samplesize, p, modeltype=1)
-    # # Tidy(samplesize, p, modeltype=2)
-    # # Tidy的相关路径需要调整一下

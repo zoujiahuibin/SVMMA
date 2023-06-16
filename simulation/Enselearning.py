@@ -6,7 +6,6 @@ def addone(X):
     return np.hstack((np.ones((len(X),1)),X))
 
 
-
 class Bagging():
     def __init__(self,X_train,Y_train,Models,Indexs):
         self.w=None
@@ -22,12 +21,7 @@ class Bagging():
         elif type=='optimal':
             A = np.zeros((len(self.Y_train), 1))
             for clf, index in zip(self.Models, self.Indexs):
-                # clf = svm.LinearSVC(penalty='l2', loss='hinge', C=self.C)
                 X_train_s = self.X_train[:, index]
-                # clf.fit(X_train_s, self.Y_train)
-                # self.Models.append(clf)
-                # beta = np.hstack((clf.intercept_, clf.coef_[0]))
-                # Betas.append(beta)
                 A = np.hstack((A, clf.predict(X_train_s).reshape(-1, 1)))
             A = A[:, 1:]
             A = np.mat(A)
@@ -74,12 +68,6 @@ class Adaboosting():
             Dt=Dt/sum(Dt)
 
         self.w=np.array(self.w)
-            # Betas.append(beta)
-            # tmp = map(lambda x: max(x, 0), 1 - Y_train * np.dot(addone(X_train_s), beta))  # hinge loss
-            # HingesLoss.append(sum(tmp))
-
-
-
 
     def predict(self,X_Pre):
         Pre=np.zeros(X_Pre.shape[0])

@@ -7,15 +7,10 @@ def addone(X):
     return np.hstack((np.ones((len(X),1)),X))
 
 
-
-
-
 def MA_Evaluation(weight, X_pre, Y_pre, Models, Indexs):
-    # 该函数用于对模型平均方法的评估
-    # results=dict()
-    # results['weight']=weight
+    # evaluation function for model averaging
     beta_weight = 0
-    # 计算SBIC的系数
+    # SBIC
     for clf, w, index in zip(Models, weight, Indexs):
         beta = np.zeros(Indexs.shape[1])
         beta[index] = clf.coef_[0]
@@ -36,7 +31,6 @@ def MA_Evaluation(weight, X_pre, Y_pre, Models, Indexs):
 
 
 class SVMMA2():
-    #权重和在0,1之间的模型平均方法
     def __init__(self,X_train,Y_train,Indexs,samplesize,Beta,Jn,C):
         self.Beta=Beta
         self.samplesize=samplesize
@@ -65,7 +59,6 @@ class SVMMA2():
                 for index in self.Indexs:
                     X_train_s = X_train_j[:, index]
                     clf.fit(X_train_s, Y_train_j)
-                    # Models.append(clf)
                     beta = np.zeros(self.X_train.shape[1])
                     beta[index] = clf.coef_[0]
                     beta=np.hstack((clf.intercept_,beta))
@@ -83,19 +76,14 @@ class SVMMA2():
                 Hingelossj.append(sum(map(lambda x: max(x, 0), 1 - Y_train_j * np.dot(addone(X_train_j), beta_j))))
             return sum(Hingelossj) / (self.Jn * self.samplesize)
 
-
-
         bnds = []
         for i in range(self.Indexs.shape[0]):
             bnds.append((0, 1))
         bnds = tuple(bnds)
         p0 = np.zeros(self.Indexs.shape[0])
-        # safsda=self.w_object2(p0)
         Betas, block=pre_optima()
         res = scipy.optimize.minimize(w_object, p0,args=(Betas,block), method='SLSQP',  bounds=bnds,options={'maxiter':200,'disp':False})#,tol=1e-6, constraints=({'type': 'eq', 'fun': lambda w: sum(w) - 1}))
         return res.x
-
-
 
 
         
@@ -107,7 +95,6 @@ class SVMMA2():
         results['testerror'] = np.array((Y_res != Y_pre)).mean()
 
     def get_minloss(self,X_pre,Y_pre):
-
         def w_object3(w_hat,Beta2):
             beta=np.dot(Beta2,w_hat)
             return sum(map(lambda x: max(x,0),1-Y_pre*np.dot(addone(X_pre),beta)))/len(Y_pre)
@@ -118,7 +105,6 @@ class SVMMA2():
             beta[index] = b
             Beta2=np.hstack((Beta2,beta.reshape(len(beta),1)))
         Beta2=Beta2[:,1:]
-
 
         bnds = []
         for i in range(self.Indexs.shape[0]):
@@ -156,7 +142,6 @@ class SVMMA():
                     block[j] = [not j * Mn <= i < (j + 1) * Mn for i in range(self.samplesize)]
                 X_train_j = self.X_train[block[j], :]
                 Y_train_j = self.Y_train[block[j]]
-                # clf = svm.SVC(kernel='linear', C=self.C,random_state=0)
                 clf = svm.LinearSVC(penalty='l2', loss='hinge', C=self.C,random_state=0,max_iter=1000)
                 Betas.append(np.zeros((self.X_train.shape[1]+1, 1)))
                 for index in self.Indexs:
@@ -185,7 +170,7 @@ class SVMMA():
         p0 = np.zeros(self.Indexs.shape[0])
         Betas, block = pre_optima()
         res = scipy.optimize.minimize(w_object, p0, args=(Betas, block), method='SLSQP', bounds=bnds,constraints={'type':'eq','fun':lambda x:sum(x)-1},
-                                      options={'maxiter': 200,'disp': False})  # ,tol=1e-6, constraints=({'type': 'eq', 'fun': lambda w: sum(w) - 1}))
+                                      options={'maxiter': 200,'disp': False})
         return res.x
 
     def do_evaluation(self, X_pre, Y_pre):
@@ -206,9 +191,7 @@ class SVMMA():
 
 
 
-
     def get_minloss(self, X_pre, Y_pre):
-
         def w_object3(w_hat, Beta2):
             beta = np.dot(Beta2, w_hat)
             return sum(map(lambda x: max(x, 0), 1 - Y_pre * np.dot(addone(X_pre), beta))) / len(Y_pre)
@@ -226,8 +209,5 @@ class SVMMA():
             bnds.append((0, 1))
         bnds = tuple(bnds)
         p0 = np.zeros(self.Indexs.shape[0])
-        # res =scipy.optimize.minimize(w_object2, p0, method='SLSQP', tol=1e-6, bounds=bnds)#, constraints=({'type': 'eq', 'fun': lambda w: sum(w) - 1}))
-        res = scipy.optimize.minimize(w_object3, p0, args=(Beta2), method='SLSQP', bounds=bnds,constraints={'type':'eq','fun':lambda x:sum(x)-1}, options={'maxiter': 200,
-                                                                                                         'disp': False})  # ,tol=1e-6, constraints=({'type': 'eq', 'fun': lambda w: sum(w) - 1}))
-
+        res = scipy.optimize.minimize(w_object3, p0, args=(Beta2), method='SLSQP', bounds=bnds,constraints={'type':'eq','fun':lambda x:sum(x)-1}, options={'maxiter': 200, 'disp': False})
         return w_object3(res.x, Beta2)

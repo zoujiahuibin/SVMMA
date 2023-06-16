@@ -5,7 +5,7 @@ import scipy.stats as stat
 
 
 def SIC(bic):
-    # 该函数用于计算sbic
+    # SBIC
     sbic = np.array([1 / sum(np.exp((bic[s] - bic) / 2)) for s in range(len(bic))])
     ind = np.where(sbic == np.inf)
     sbic[ind] = max(sbic != np.inf) + 1e3
@@ -15,7 +15,7 @@ def addone(X):
     return np.hstack((np.ones((len(X),1)),X))
 
 def Indexs_fun(p, Mn):
-    a = range(p)  # 全排变量的位次
+    a = range(p)
     Mn = min(Mn, p)
     indexs = []
     for i in range(1, Mn):
@@ -25,31 +25,6 @@ def Indexs_fun(p, Mn):
         Indexs[i, indexs[i]] = 1
     # Indexs[:, 0:m] = 1
     return Indexs == 1
-
-
-
-def Indexs_fun_kmeans(X,k):
-    #通过聚类feature，进行模型索引的准备
-    KMeans=myKMeans(X=X,k=k,tol=1e-4,maxiter=50)
-    C,labels=KMeans.fit(axis=1,normtype=None)
-
-    varclass=[]
-    for i in range(k):
-        varclass.append(np.where(labels==i)[0].tolist())
-
-    #从每一类中挑选出一个变量
-    Indexs=np.zeros((1,X.shape[1]))
-    while sum(map(len,varclass)):
-        index=np.zeros((1,X.shape[1]))
-        for i in range(k):
-            if varclass[i]:
-                index[0,varclass[i].pop()]=1
-        Indexs=np.vstack((Indexs,index))
-    Indexs=Indexs[1:,:]
-
-    return Indexs==1
-
-
 
 
 
@@ -110,10 +85,8 @@ def Indexs_fun_lasso_select(X,Y,C,k=None):
 
     CH_method=select_method.SVMICH(HingesLoss,Indexs,Models,X.shape[0],Ln=np.sqrt(np.log(X.shape[0])))
     CH_method.get_scores()
-    # model_inds=CL_method.SVMICL_scores
     model_inds=sorted(range(len(CH_method.SVMICH_scores)), key=lambda k: CH_method.SVMICH_scores[k]) [0:min(k,X.shape[1])] # 返回排序索引,从小到大排列
     Indexs=Indexs[model_inds,:]
-    # Indexs[0:4,:]=True
     return Indexs
 
 
