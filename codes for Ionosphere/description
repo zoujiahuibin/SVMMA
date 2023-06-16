@@ -1,0 +1,2 @@
+unif的模型平均方法和bagging的异同：
+它们使用的权重都是等权重，但是unif是beta的组合，bagging是输出的组合
